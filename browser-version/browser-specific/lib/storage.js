@@ -126,7 +126,7 @@ function _readFile (fileObject, encoding, cb) {
       cb(null, e.target.result);
     };
     reader.onerror = cb;
-    reader.readAsText(file, encoding || 'UTF-8');
+    reader.readAsBinaryString(file, encoding || 'UTF-8');
   }, cb);
 }
 
