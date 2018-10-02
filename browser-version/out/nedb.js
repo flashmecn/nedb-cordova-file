@@ -3299,7 +3299,7 @@ Persistence.prototype.loadDatabase = function (cb) {
 module.exports = Persistence;
 
 },{"./customUtils":6,"./indexes":9,"./model":10,"./storage":12,"__browserify_process":4,"async":13,"path":2}],12:[function(require,module,exports){
-/**
+var global=self;/**
  * Way data is stored for this database
  * For a Node.js/Node Webkit database it's the file system
  * For a browser-side database it's the device file system, exposed via the `cordova-file` plugin
@@ -3532,10 +3532,21 @@ function _readFile (fileObject, encoding, cb) {
   fileObject.file(function (file) {
     var reader = new FileReader();
     reader.onloadend = function (e) {
-      cb(null, e.target.result);
+      try {
+        cb(null, ArrayBufferToString(e.target.result, 'utf8'));
+      } catch(e) {
+        var reader = new FileReader();
+
+        reader.onloadend = function (e) {
+          cb(null, e.target.result);
+        };
+
+        reader.onerror = cb;
+        reader.readAsBinaryString(file);
+      }
     };
     reader.onerror = cb;
-    reader.readAsBinaryString(file, encoding || 'UTF-8');
+    reader.readAsArrayBuffer(file);
   }, cb);
 }
 
@@ -3551,7 +3562,7 @@ function _writeFile (fileObject, data, encoding, cb, isAppend) {
     };
     fileWriter.onerror = cb;
 
-    var blob = new Blob([data], { type: 'text/plain', encoding: "UTF-8", endings: 'native' });
+    var blob = new Blob([data], { type: 'text/plain;charset=UTF-8', encoding: "UTF-8", endings: 'native' });
     if (isAppend && typeof isAppend === 'boolean') {
       try {
         fileWriter.seek(fileWriter.length);
@@ -3666,6 +3677,40 @@ function _ensureInit(cb) {
   } else {
     cb(storage._rootFS);
   }
+}
+
+function ArrayBufferToString (buffer, encoding) {
+  if (encoding == null) encoding = 'utf8'
+
+  var uint8 = new Uint8Array(buffer)
+
+  if (encoding === 'hex') {
+    var out = ''
+    for (var i = 0, l = uint8.byteLength; i < l; ++i) {
+      out += toHex(uint8[i])
+    }
+    return out
+  }
+
+  if (encoding === 'base64') {
+    str = String.fromCharCode.apply(null, uint8)
+    return btoa(str)
+  }
+
+  if (encoding === 'binary' ||
+    encoding === 'latin1' ||
+    !global.TextDecoder) {
+    str = String.fromCharCode.apply(null, uint8)
+    return str
+  }
+
+
+  //TextDecoder way
+  if (encoding === 'utf16le') encoding = 'utf-16le'
+
+  var decoder = new TextDecoder(encoding)
+  var str = decoder.decode(uint8)
+  return str
 }
 
 
