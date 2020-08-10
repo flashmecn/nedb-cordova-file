@@ -4971,10 +4971,8 @@ _AVLTree.prototype.insert = function (key, value) {
     // Same key: no change in the tree structure
     if (currentNode.compareKeys(currentNode.key, key) === 0) {
       if (currentNode.unique) {
-        var err = new Error("Can't insert key " + key + ", it violates the unique constraint");
-        err.key = key;
-        err.errorType = 'uniqueViolated';
-        throw err;
+        this.delete(key);
+        currentNode.data.push(value);
       } else {
         currentNode.data.push(value);
       }
@@ -5372,10 +5370,8 @@ BinarySearchTree.prototype.insert = function (key, value) {
   // Same key as root
   if (this.compareKeys(this.key, key) === 0) {
     if (this.unique) {
-      var err = new Error("Can't insert key " + key + ", it violates the unique constraint");
-      err.key = key;
-      err.errorType = 'uniqueViolated';
-      throw err;
+      this.delete(key);
+      this.insert(key, value);
     } else {
       this.data.push(value);
     }
